@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	_ "modernc.org/sqlite"
@@ -99,10 +98,8 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 	if err != nil {
 		return err
 	}
-	if p.Status != ParcelStatusRegistered {
-		return errors.New("NOT REGISTERED")
-	}
-	_, err = s.db.Exec("UPDATE parcel SET address = :address WHERE number = :number",
+	_, err = s.db.Exec("UPDATE parcel SET address = CASE WHEN status = :status THEN :address ELSE address END WHERE number = :number",
+		sql.Named("status", ParcelStatusRegistered),
 		sql.Named("address", address),
 		sql.Named("number", number))
 
@@ -117,8 +114,8 @@ func (s ParcelStore) Delete(number int) error {
 		sql.Named("number", number),
 		sql.Named("status", ParcelStatusRegistered))
 	if err != nil {
-		err = fmt.Errorf("db exec error: %w", err)
-		return err
+		return fmt.Errorf("db exec error: %w", err)
+
 	}
 	return nil
 }

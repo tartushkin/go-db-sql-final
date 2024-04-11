@@ -2,8 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"log"
+	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -33,7 +34,8 @@ func getTestParcel() Parcel {
 func setupDB() *sql.DB {
 	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("ошибка gри открытии %v", err)
+		os.Exit(1)
 	}
 	return db
 }
@@ -56,17 +58,14 @@ func TestAddGetDelete(t *testing.T) {
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	parcelID, err := store.Add(parcel)
 	require.NoError(t, err)
-	require.NotNil(t, parcelID)
+	require.NotZero(t, parcelID)
 
 	// get
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
 	storedParcel, err := store.Get(parcelID)
 	require.NoError(t, err)
-	assert.Equal(t, parcel.Client, storedParcel.Client)
-	assert.Equal(t, parcel.Status, storedParcel.Status)
-	assert.Equal(t, parcel.Address, storedParcel.Address)
-	assert.Equal(t, parcel.CreatedAt, storedParcel.CreatedAt)
+	require.Equal(t, parcel, storedParcel)
 
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
@@ -74,8 +73,9 @@ func TestAddGetDelete(t *testing.T) {
 	err = store.Delete(parcelID)
 	require.NoError(t, err)
 
-	_, err = store.Get(parcelID)
+	parcel, err = store.Get(parcelID)
 	require.Error(t, err)
+	require.NotNil(t, parcel)
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -178,7 +178,7 @@ func TestGetByClient(t *testing.T) {
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
 		// убедитесь, что значения полей полученных посылок заполнены верно
 		id := parcel.Number
-		assert.NotEqual(t, 0, parcelMap[id])
+		assert.Contains(t, parcelMap, id, "посылка с номером %d отсутствует в parcelMap", id)
 		assert.Equal(t, parcelMap[id], parcel)
 
 	}
