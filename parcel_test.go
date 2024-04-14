@@ -54,27 +54,24 @@ func TestAddGetDelete(t *testing.T) {
 	parcel := getTestParcel()
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
-	parcelID, err := store.Add(parcel)
+	parcel.Number, err = store.Add(parcel)
 	require.NoError(t, err)
-	require.Greater(t, parcelID, 0)
+	require.Greater(t, parcel.Number, 0)
 
 	// get
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
-	storedParcel, err := store.Get(parcelID)
+	storedParcel, err := store.Get(parcel.Number)
 	require.NoError(t, err)
-	assert.Equal(t, parcel.Status, storedParcel.Status)
-	assert.Equal(t, parcel.Client, storedParcel.Client)
-	assert.Equal(t, parcel.Address, storedParcel.Address)
-	assert.Equal(t, parcel.CreatedAt, storedParcel.CreatedAt)
+	assert.Equal(t, parcel, storedParcel)
 
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что посылку больше нельзя получить из БД
-	err = store.Delete(parcelID)
+	err = store.Delete(parcel.Number)
 	require.NoError(t, err)
 
-	parcel, err = store.Get(parcelID)
+	parcel, err = store.Get(parcel.Number)
 	require.Error(t, err)
 	assert.NotNil(t, parcel)
 }
@@ -148,7 +145,6 @@ func TestGetByClient(t *testing.T) {
 		getTestParcel(),
 		getTestParcel(),
 	}
-	parcelMap := map[int]Parcel{}
 
 	// задаём всем посылкам один и тот же идентификатор клиента
 	client := randRange.Intn(10_000_000)
@@ -165,7 +161,7 @@ func TestGetByClient(t *testing.T) {
 		parcels[i].Number = id
 
 		// сохраняем добавленную посылку в структуру map, чтобы её можно было легко достать по идентификатору посылки
-		parcelMap[id] = parcels[i]
+
 	}
 
 	/// get by client
@@ -176,18 +172,8 @@ func TestGetByClient(t *testing.T) {
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
 	require.Equal(t, len(parcels), len(storedParcels), "кол-во не совпадает")
 
-	// check
-	for _, parcel := range storedParcels {
-		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
-		// убедитесь, что все посылки из storedParcels есть в parcelMap
-		// убедитесь, что значения полей полученных посылок заполнены верно
-		id := parcel.Number
-		assert.ElementsMatch(t, parcels, storedParcels)
-		assert.Equal(t, parcelMap[id], parcel)
-
-	}
-
 	// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 	// убедитесь, что все посылки из storedParcels есть в parcelMap
 	// убедитесь, что значения полей полученных посылок заполнены верно
+	assert.ElementsMatch(t, parcels, storedParcels)
 }
